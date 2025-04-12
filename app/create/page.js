@@ -3,13 +3,10 @@ import CofessionCard from "../_components/CofessionCard";
 import ConfessionForm from "../_components/ConfessionForm";
 
 export const metadata = {
-  title: "Cabins",
+  title: "Create Confenssion",
 };
 
 export default function Page() {
-  // CHANGE
-  const cabins = [];
-
   return (
     <div className="container mx-auto px-4 py-8 md:py-12">
       {/* Hero Section */}

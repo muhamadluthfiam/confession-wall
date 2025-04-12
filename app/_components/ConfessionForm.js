@@ -19,7 +19,7 @@ export default function ConfessionForm() {
     const timer = setTimeout(() => {
       setErrorMessage("");
       setSuccessMessage("");
-    }, 3000);
+    }, 4000);
 
     return () => clearTimeout(timer);
   }, [errorMessage, successMessage]);
