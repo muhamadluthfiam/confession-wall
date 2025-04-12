@@ -9,9 +9,18 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@heroicons/react": "^2.2.0",
+    "@rainbow-me/rainbowkit": "^2.2.4",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.487.0",
+    "next": "14.2.26",
     "react": "^18",
     "react-dom": "^18",
-    "next": "14.2.26"
+    "tailwind-merge": "^3.2.0",
+    "tailwindcss-animate": "^1.0.7",
+    "viem": "^2.26.3",
+    "wagmi": "^2.14.16"
   },
   "devDependencies": {
     "postcss": "^8",
