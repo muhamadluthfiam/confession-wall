@@ -13,7 +13,7 @@ export const teaSepolia = {
     symbol: "TEA",
   },
   rpcUrls: {
-    public: { http: [process.env.NEXT_PUBLIC_CHAIN_RPC] },
+    public: { http: [process.env.NEXT_PUBLIC_CHAIN_RPC_DEFAULT] },
     default: { http: [process.env.NEXT_PUBLIC_CHAIN_RPC_DEFAULT] },
   },
   blockExplorers: {

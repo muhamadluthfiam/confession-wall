@@ -8,7 +8,7 @@ export default function Footer() {
     <footer className="bg-accent-800 text-white py-2 mt-2 fixed bottom-0 right-0 left-0">
       <div className="container mx-auto px-4 max-w-7xl">
         <div className="border-t border-accent-700 flex flex-col md:flex-row justify-between items-center">
-          <p class="footer-heart">
+          <p>
             Made with
             ❤️
             <a href="https://luthfiamrullah.xyz/">luthfi amrullah

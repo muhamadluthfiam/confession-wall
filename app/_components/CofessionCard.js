@@ -1,29 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useReadContract } from "wagmi";
 import { abi, contractAddress } from "../_lib/contract";
 import { teaSepolia } from "../../wagmi.config";
-import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+
 import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function ConfessionCard() {
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(5); // Jumlah item per halaman
+  const [itemsPerPage] = useState(6);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Read all confessions from contract
+  // Fetch data dari smart contract
   const {
     data: confessions,
     isLoading,
-    error
+    error,
+    refetch,
   } = useReadContract({
     address: contractAddress,
     abi,
@@ -31,28 +26,29 @@ export default function ConfessionCard() {
     chainId: teaSepolia.id,
   });
 
+  // Auto-refresh setiap 15 detik
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refetch();
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [refetch]);
+
+  // Urutkan data terbaru di atas (asumsi ada properti timestamp)
+  const sortedConfessions = [...(confessions || [])].sort(
+    (a, b) => Number(b.timestamp) - Number(a.timestamp)
+  );
+
   // Pagination logic
-  const totalItems = confessions?.length || 0;
+  const totalItems = sortedConfessions.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentConfessions = confessions?.slice(startIndex, endIndex) || [];
+  const currentConfessions = sortedConfessions.slice(startIndex, endIndex);
 
-  const goToPage = (page) => {
-    setCurrentPage(page);
-  };
-
-  const nextPage = () => {
-    if (currentPage < totalPages) {
-      setCurrentPage(currentPage + 1);
-    }
-  };
-
-  const prevPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
-    }
-  };
+  const goToPage = (page) => setCurrentPage(page);
+  const nextPage = () => currentPage < totalPages && setCurrentPage(currentPage + 1);
+  const prevPage = () => currentPage > 1 && setCurrentPage(currentPage - 1);
 
   if (isLoading) {
     return (
@@ -70,7 +66,7 @@ export default function ConfessionCard() {
     );
   }
 
-  if (!confessions || confessions.length === 0) {
+  if (confessions?.length === 0) {
     return (
       <div className="text-gray-500 p-4 text-center">
         No confessions found. Be the first to share!
@@ -80,33 +76,52 @@ export default function ConfessionCard() {
 
   return (
     <div className="border rounded-lg overflow-hidden">
-      <Table>
-        <TableCaption>List of Confessions (Total: {totalItems})</TableCaption>
-        <TableHeader className="bg-accent-300">
-          <TableRow>
-            <TableHead className="w-[50px]">#</TableHead>
-            <TableHead>Sender</TableHead>
-            <TableHead>Message</TableHead>
-            <TableHead className="text-right">Timestamp</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {currentConfessions.map((confession, index) => (
-            <TableRow key={startIndex + index}>
-              <TableCell className="font-medium">{startIndex + index + 1}</TableCell>
-              <TableCell className="truncate max-w-[100px]">
-                {`${confession.sender.slice(0, 6)}...${confession.sender.slice(-4)}`}
-              </TableCell>
-              <TableCell>{confession.message}</TableCell>
-              <TableCell className="text-right">
-                {new Date(Number(confession.timestamp) * 1000).toLocaleString()}
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+      {/* Header + Tombol Refresh */}
+      <div className="flex justify-between items-center px-4 py-3 bg-accent-300 border-b">
+        <span className="text-sm font-semibold text-primary-700">
+          List of Confessions (Total: {totalItems})
+        </span>
+        <div className="flex flex-col items-end gap-1">
+          <button
+            onClick={async () => {
+              setIsRefreshing(true);
+              await refetch();
+              setIsRefreshing(false);
+            }}
+            disabled={isRefreshing}
+            className={`text-sm px-4 py-1.5 rounded-md ${isRefreshing
+              ? "bg-gray-400 text-white"
+              : "bg-accent-600 hover:bg-accent-700 text-white"
+              }`}
+          >
+            {isRefreshing ? "Refreshing..." : "Refresh"}
+          </button>
+          <span className="text-xs text-gray-500 italic">
+            Auto-refresh every 15s
+          </span>
+        </div>
+      </div>
 
-      {/* Pagination Controls */}
+      {/* Table */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+        {currentConfessions.map((confession, index) => (
+          <Card key={startIndex + index} className="shadow-md hover:shadow-lg transition">
+            <CardHeader>
+              <CardTitle className="text-base">
+                🧑 {`${confession.sender.slice(0, 6)}...${confession.sender.slice(-5)}`}
+              </CardTitle>
+              <CardDescription className="text-xs text-gray-500">
+                #{startIndex + index + 1} • {new Date(Number(confession.timestamp) * 1000).toLocaleString()}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm whitespace-pre-wrap">{confession.message}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Pagination */}
       <div className="flex items-center justify-between px-4 py-3 bg-accent-300 border-t">
         <div className="text-sm text-gray-700">
           Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} entries
@@ -115,16 +130,22 @@ export default function ConfessionCard() {
           <button
             onClick={prevPage}
             disabled={currentPage === 1}
-            className={`p-2 rounded-md ${currentPage === 1 ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700 hover:bg-accent-400'}`}
+            className={`p-2 rounded-md ${currentPage === 1
+              ? "text-gray-400 cursor-not-allowed"
+              : "text-gray-700 hover:bg-accent-400"
+              }`}
           >
             <ChevronLeft className="h-5 w-5" />
           </button>
 
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
             <button
               key={page}
               onClick={() => goToPage(page)}
-              className={`w-10 h-10 rounded-md ${currentPage === page ? 'bg-accent-600 text-white' : 'text-gray-700 hover:bg-accent-400'}`}
+              className={`w-10 h-10 rounded-md ${currentPage === page
+                ? "bg-accent-600 text-white"
+                : "text-gray-700 hover:bg-accent-400"
+                }`}
             >
               {page}
             </button>
@@ -133,7 +154,10 @@ export default function ConfessionCard() {
           <button
             onClick={nextPage}
             disabled={currentPage === totalPages}
-            className={`p-2 rounded-md ${currentPage === totalPages ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700 hover:bg-gray-200'}`}
+            className={`p-2 rounded-md ${currentPage === totalPages
+              ? "text-gray-400 cursor-not-allowed"
+              : "text-gray-700 hover:bg-gray-200"
+              }`}
           >
             <ChevronRight className="h-5 w-5" />
           </button>
